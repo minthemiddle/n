@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+    <title>Notes App</title>
+</head>
+
+<body class="p-4">
+    <div x-data="app()" x-init="loadNotes()">
+        <input type="text" placeholder="Enter heading" x-model="noteHeading" class="w-full rounded p-2 mb-4 border-2 font-bold">
+        <textarea x-model="noteText" placeholder="Enter your note" class="w-full rounded p-2 mb-4 border-2"></textarea>
+        <button @click="addNote" class="bg-blue-500 text-white rounded py-2 px-4">Add Note</button>
+        <hr class="my-4">
+        <div x-show="notes.length > 0">
+            <h2 class="text-xl font-bold mb-2">Notes:</h2>
+            <ul>
+                <template x-for="note in notes" :key="note.id">
+                    <li class="py-2">
+                        <input x-model="note.heading" type="text" x-on:input="updateNoteText(note)" class="w-full rounded p-2 mb-2 border-2 font-bold">
+                        <textarea x-model="note.text" x-on:input="updateNoteText(note)"
+                                    class="mb-2 w-full rounded p-2 border-2"></textarea>
+                        <button @click="deleteNote(note.id)"
+                                    class="bg-red-500 text-white rounded py-1 px-2">Delete</button>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        <button @click="copyNotes" class="bg-green-500 text-white rounded py-2 px-4 mt-4">Copy Notes as JSON</button>
+        <button @click="deleteAllNotes" class="bg-red-500 text-white rounded py-2 px-4 ml-2">Delete All Notes</button>
+    </div>
+
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuidv4.min.js"></script>
+    <script>
+        function app() {
+            return {
+                noteHeading: '',
+                noteText: '',
+                notes: [],
+
+                loadNotes() {
+                    const storedNotes = localStorage.getItem('notes');
+                    if (storedNotes) {
+                        this.notes = JSON.parse(storedNotes);
+                    }
+                },
+
+                addNote() {
+                    if (this.noteText.trim() !== '') {
+                        const currentYear = new Date().getFullYear().toString().slice(-2);
+                        const timestamp = currentYear + new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/[^0-9]/g, '');
+                        const note = {
+                            id: uuidv4().substring(0, 8),
+                            heading: this.noteHeading,
+                            text: this.noteText,
+                            timestamp: timestamp
+                        };
+                        this.notes.push(note);
+                        this.noteText = '';
+                        this.noteHeading = '';
+                        this.saveNotes();
+                    }
+                },
+
+                updateNoteText(note) {
+                    this.saveNotes();
+                },
+
+                deleteNote(noteId) {
+                    this.notes = this.notes.filter(note => note.id !== noteId);
+                    this.saveNotes();
+                },
+
+                deleteAllNotes() {
+                    this.notes = [];
+                    this.saveNotes();
+                },
+
+                saveNotes() {
+                    localStorage.setItem('notes', JSON.stringify(this.notes));
+                },
+
+                copyNotes() {
+                    const notesCopy = JSON.stringify(this.notes);
+                    navigator.clipboard.writeText(notesCopy);
+                    alert('Notes copied to clipboard!');
+                },
+
+                
+            };
+        }
+
+    </script>
+</body>
+
+</html>
